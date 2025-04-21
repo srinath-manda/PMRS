@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Medicine Recommendation System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 2rem auto;
+            max-width: 600px;
+            background-color: #f9fafb;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        #symptomsList {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.5rem 1rem;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95rem;
+            user-select: none;
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 1rem;
+            display: block;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #results {
+            margin-top: 1.5rem;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            max-width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 60px;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        ul {
+            padding-left: 1.2rem;
+            margin: 0;
+        }
+        ul li {
+            margin-bottom: 0.4rem;
+            font-size: 1rem;
+            color: #2c3e50;
+        }
+        /* Scrollbar styling for symptoms list */
+        #symptomsList::-webkit-scrollbar {
+            width: 8px;
+        }
+        #symptomsList::-webkit-scrollbar-thumb {
+            background-color: #bdc3c7;
+            border-radius: 4px;
+        }
+        #symptomsList::-webkit-scrollbar-track {
+            background-color: #ecf0f1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Medicine Recommendation System</h1>
+    <h2>Select symptoms:</h2>
+    <div id="symptomsList">
+        <!-- Symptom checkboxes will be added here -->
+    </div>
+    <button onclick="getRecommendationsBySymptoms()">Recommend Medicines</button>
+
+    <div id="results"></div>
+
+    <script>
+        const symptoms = [
+            "acne", "adhd", "allergies", "anxiety", "arthritis", "asthma", "back pain",
+            "bacterial infection", "bipolar disorder", "cancer", "cold", "constipation",
+            "depression", "diabetes", "diarrhea", "eczema", "fatigue", "fever",
+            "headache", "heart disease", "high blood pressure", "insomnia", "migraine",
+            "nausea", "pain", "psoriasis", "rash", "sinusitis", "stress", "ulcer"
+        ];
+
+        const symptomsListDiv = document.getElementById('symptomsList');
+        symptoms.forEach(symptom => {
+            const label = document.createElement('label');
+            label.style.display = 'block';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = symptom;
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(' ' + symptom));
+            symptomsListDiv.appendChild(label);
+        });
+
+        async function getRecommendationsBySymptoms() {
+            const checkboxes = document.querySelectorAll('#symptomsList input[type="checkbox"]:checked');
+            const selectedSymptoms = Array.from(checkboxes).map(cb => cb.value);
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            if (selectedSymptoms.length === 0) {
+                resultsDiv.innerHTML = '<p class="error">Please select at least one symptom.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/recommend_by_symptoms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ symptoms: selectedSymptoms })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.recommended_medicines && data.recommended_medicines.length > 0) {
+                        const listItems = data.recommended_medicines.map(med => `<li>${med}</li>`).join('');
+                        resultsDiv.innerHTML = `<h3>Recommended Medicines:</h3><ul>${listItems}</ul>`;
+                    } else {
+                        resultsDiv.innerHTML = '<p>No recommendations found.</p>';
+                    }
+                } else {
+                    resultsDiv.innerHTML = `<p class="error">${data.error}</p>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">Error fetching recommendations.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
